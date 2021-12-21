@@ -34,6 +34,7 @@ class Main():
         """Connect current sensor to its observation"""
         _timestmp= int(row["time"])/10**9
         _datetime=datetime.fromtimestamp(_timestmp)
+        _datetime = _datetime.strftime("%Y-%m-%dT%H:%M:%S")
         # We connect sensor to room  observations
         # --------------------------------------------------------------------------------------------------------------------------
         #if sensor don't capture temperature we don't even connecte it to room temperature , event if we could do it but we will not get any result.
@@ -42,8 +43,8 @@ class Main():
             _newTemperature= BNode(uuid.uuid4())
             self.rdfGraph.add(  ( self.SENSOR[self.currentComputedSensor] , SSN.detects , _newTemperature ) )
             self.rdfGraph.add(  ( _newTemperature , SSN.hasProperty , self.ROOM["{}#temperature".format(self.currentComputedRoom)] ) )
-            self.rdfGraph.add(  ( _newTemperature , SOSA.resultTime , Literal(_datetime, datatype=XSD.date ) ) )
-            self.rdfGraph.add(  ( _newTemperature , SOSA.hasSimpleResult , Literal(str(float(row["TEMP"])), datatype=XSD.decimal ) ) )
+            self.rdfGraph.add(  ( _newTemperature , SOSA.resultTime , Literal(_datetime, datatype=XSD.datetime ) ) )
+            self.rdfGraph.add(  ( _newTemperature , SOSA.hasSimpleResult , Literal(str(float(row["TEMP"])), datatype=XSD.float ) ) )
 
                 
             
@@ -56,7 +57,7 @@ class Main():
             _newHumidity= BNode(uuid.uuid4())
             self.rdfGraph.add(  ( self.SENSOR[self.currentComputedSensor] , SSN.detects , _newHumidity ) )
             self.rdfGraph.add(  ( _newHumidity , SSN.hasProperty , self.ROOM["{}#humidity".format(self.currentComputedRoom)] ) )
-            self.rdfGraph.add(  ( _newHumidity , SOSA.resultTime , Literal(_datetime, datatype=XSD.date ) ) )
+            self.rdfGraph.add(  ( _newHumidity , SOSA.resultTime , Literal(_datetime, datatype=XSD.datetime ) ) )
             self.rdfGraph.add(  ( _newHumidity , SOSA.hasSimpleResult , Literal(str(float(row["HMDT"])), datatype=XSD.float ) ) )
 
                 
@@ -70,7 +71,7 @@ class Main():
             _newLuminosity= BNode(uuid.uuid4())
             self.rdfGraph.add(  ( self.SENSOR[self.currentComputedSensor] , SSN.detects , _newLuminosity ) )
             self.rdfGraph.add(  ( _newLuminosity , SSN.hasProperty , self.ROOM["{}#luminosity".format(self.currentComputedRoom)] ) )
-            self.rdfGraph.add(  ( _newLuminosity , SOSA.resultTime , Literal(_datetime, datatype=XSD.date ) ) )
+            self.rdfGraph.add(  ( _newLuminosity , SOSA.resultTime , Literal(_datetime, datatype=XSD.datetime ) ) )
             self.rdfGraph.add(  ( _newLuminosity, SOSA.hasSimpleResult , Literal(str(float(row["LUMI"])), datatype=XSD.float ) ) )
 
                 
@@ -105,6 +106,7 @@ class Main():
                 self.currentComputedRoom= _sensor.split("/")
                 if len(self.currentComputedRoom) == 4 and self.currentComputedRoom[3][0:2]=="S4":
                     self.currentComputedRoom=self.currentComputedRoom[3][1:]
+                    # Relation Room to Sensor , we were hesitating between isLocationOf and hosts and we think that they are semantically equivalent
                     self.rdfGraph.add(  (  self.ROOM[ self.currentComputedRoom ] , self.CORE.isLocationOf , self.SENSOR[self.currentComputedSensor] )  )
                     # add sensor captured temperature...
                     self.manageSensorObservation(row=_row)
@@ -116,9 +118,15 @@ class Main():
         
         self.rdfGraph.serialize(destination="generatedFile.ttl")
     
-    def dbManagement(self):
+    def insertionSensorDataGraph(self):
+        """
+        Insert to BDD the converted Non rdf datas 
+        we uploaded directly the generated file to the playstore but  we can also use this methode
+        """
         self.store.open((self.queryEndpoint, self.updateEndpoint))
-        #CODE HERE
+        #! you have first to untar the tar file
+        self.rdfGraph.parse("./generatedFile.ttl")
+        self.store.add_graph(self.rdfGraph)
         self.store.close()
         
 test=Main()
