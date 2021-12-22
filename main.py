@@ -1,18 +1,12 @@
 from datetime import datetime
 import pandas as pd
-from rdflib import Namespace, plugin, Dataset
+from rdflib import Namespace
 from rdflib.namespace import CSVW, DC, DCAT, DCTERMS, DOAP, FOAF, ODRL2, ORG, OWL, \
     PROF, PROV, RDF, RDFS, SDO, SH, SKOS, SOSA, SSN, TIME, \
     VOID, XMLNS, XSD
 from rdflib.plugins.stores import sparqlstore
-from rdflib import Graph, URIRef, Literal, BNode
-from rdflib.store import Store
-import rdflib_sqlalchemy
-from rdflib import ConjunctiveGraph, Literal
-import rdflib
-from rdflib import plugin
-import numpy as np
-import uuid
+from rdflib import Graph, Literal
+from rdflib import  Literal
 import tarfile
 
 from tableMeteoExtractor import TableMeteoExtractor
@@ -32,13 +26,14 @@ class Main():
         # NameSpaces
         self.ROOM = Namespace("https://territoire.emse.fr/kg/emse/fayol/4ET/")
         self.SENSOR = Namespace("http://localhost:3030/sensor/")
+        self.OBS= Namespace("http://localhost:3030/observation/")
         self.CORE = Namespace("https://w3id.org/rec/core/")
         self.SEAS = Namespace("https://w3id.org/seas/")
     def __extracTars__(self, archives):
         _tar = tarfile.open(archives)
         _tar.extractall('./')
         _tar.close()
-    def __manageSensorObservation__(self, row):
+    def __manageSensorObservation__(self, row, idRow):
         """Connect current sensor to its observation"""
         _timestmp = int(row["time"])/10**9
         _datetime = datetime.fromtimestamp(_timestmp)
@@ -48,14 +43,16 @@ class Main():
         # if sensor don't capture temperature we don't even connecte it to room temperature , event if we could do it but we will not get any result.
 
         if row["TEMP"]:
-            _newTemperature = BNode(uuid.uuid4())
+            _temperatureObs=self.OBS["{}_temp_id_{}".format(self.currentComputedSensor,idRow)]
             self.rdfGraph.add(
-                (self.SENSOR[self.currentComputedSensor], SSN.detects, _newTemperature))
-            self.rdfGraph.add((_newTemperature, SSN.hasProperty,
+                (_temperatureObs , RDF.type, SOSA.Observation ))
+            self.rdfGraph.add(
+                (self.SENSOR[self.currentComputedSensor], SSN.detects, _temperatureObs))
+            self.rdfGraph.add((_temperatureObs, SSN.hasProperty,
                               self.ROOM["{}#temperature".format(self.currentComputedRoom)]))
-            self.rdfGraph.add((_newTemperature, SOSA.resultTime,
+            self.rdfGraph.add((_temperatureObs, SOSA.resultTime,
                               Literal(_datetime, datatype=XSD.datetime)))
-            self.rdfGraph.add((_newTemperature, SOSA.hasSimpleResult, Literal(
+            self.rdfGraph.add((_temperatureObs, SOSA.hasSimpleResult, Literal(
                 str(float(row["TEMP"])), datatype=XSD.float)))
 
         # --------------------------------------------------------------------------------------------------------------------------
@@ -64,14 +61,16 @@ class Main():
         # if sensor don't capture humidity we don't even connecte it to room humidity , event if we could do it but we will not get any result.
 
         if row["HMDT"]:
-            _newHumidity = BNode(uuid.uuid4())
+            _humidityObs=self.OBS["{}_hmdt_id_{}".format(self.currentComputedSensor,idRow)]
             self.rdfGraph.add(
-                (self.SENSOR[self.currentComputedSensor], SSN.detects, _newHumidity))
-            self.rdfGraph.add((_newHumidity, SSN.hasProperty,
+                (_humidityObs, RDF.type, SOSA.Observation ))
+            self.rdfGraph.add(
+                (self.SENSOR[self.currentComputedSensor], SSN.detects, _humidityObs))
+            self.rdfGraph.add((_humidityObs, SSN.hasProperty,
                               self.ROOM["{}#humidity".format(self.currentComputedRoom)]))
-            self.rdfGraph.add((_newHumidity, SOSA.resultTime,
+            self.rdfGraph.add((_humidityObs, SOSA.resultTime,
                               Literal(_datetime, datatype=XSD.datetime)))
-            self.rdfGraph.add((_newHumidity, SOSA.hasSimpleResult, Literal(
+            self.rdfGraph.add((_humidityObs, SOSA.hasSimpleResult, Literal(
                 str(float(row["HMDT"])), datatype=XSD.float)))
 
         # --------------------------------------------------------------------------------------------------------------------------
@@ -79,14 +78,16 @@ class Main():
         # --------------------------------------------------------------------------------------------------------------------------
         # if sensor don't capture luminosity we don't even connecte it to room luminosity , event if we could do it but we will not get any result.
         if row["LUMI"]:
-            _newLuminosity = BNode(uuid.uuid4())
+            _luminosityObs=self.OBS["{}_lumi_id_{}".format(self.currentComputedSensor,idRow)]
             self.rdfGraph.add(
-                (self.SENSOR[self.currentComputedSensor], SSN.detects, _newLuminosity))
-            self.rdfGraph.add((_newLuminosity, SSN.hasProperty,
+                (_luminosityObs, RDF.type, SOSA.Observation ))
+            self.rdfGraph.add(
+                (self.SENSOR[self.currentComputedSensor], SSN.detects, _luminosityObs))
+            self.rdfGraph.add((_luminosityObs, SSN.hasProperty,
                               self.ROOM["{}#luminosity".format(self.currentComputedRoom)]))
-            self.rdfGraph.add((_newLuminosity, SOSA.resultTime,
+            self.rdfGraph.add((_luminosityObs, SOSA.resultTime,
                               Literal(_datetime, datatype=XSD.datetime)))
-            self.rdfGraph.add((_newLuminosity, SOSA.hasSimpleResult, Literal(
+            self.rdfGraph.add((_luminosityObs, SOSA.hasSimpleResult, Literal(
                 str(float(row["LUMI"])), datatype=XSD.float)))
 
         # --------------------------------------------------------------------------------------------------------------------------
@@ -103,6 +104,11 @@ class Main():
         self.rdfGraph.bind("sensor", self.SENSOR)
         self.rdfGraph.bind("core", self.CORE)
         self.rdfGraph.bind("seas", self.SEAS)
+        self.rdfGraph.bind("sosa", SOSA)
+        self.rdfGraph.bind("ssn",SSN)
+        self.rdfGraph.bind("rdf",RDF)
+        self.rdfGraph.bind("xsd",XSD)
+        self.rdfGraph.bind("observation",self.OBS)
         # ---------------------------------------
         _masque = self.sensorsData['location'].str.contains(
             'emse/fayol/e4/S4\w+')
@@ -117,20 +123,24 @@ class Main():
         for _i, _row in self.orderedSensorData.iterrows():
             if self.currentComputedSensor == _row["id"]:
                 # Add sensor captured temperature
-                self.__manageSensorObservation__(row=_row)
+                self.__manageSensorObservation__(row=_row, idRow=_i)
 
             else:
                 # relation betweene room and the new sensor
                 self.currentComputedSensor = str(_row["id"])
+                self.currentComputedSensor = self.currentComputedSensor.replace("-","_")
+                print(self.currentComputedSensor)
                 _sensor = str(_row["location"])
                 self.currentComputedRoom = _sensor.split("/")
                 if len(self.currentComputedRoom) == 4 and self.currentComputedRoom[3][0:2] == "S4":
                     self.currentComputedRoom = self.currentComputedRoom[3][1:]
                     # Relation Room to Sensor , we were hesitating between isLocationOf and hosts and we think that they are semantically equivalent
                     self.rdfGraph.add(
+                        (self.SENSOR[self.currentComputedSensor], RDF.type, SOSA.Sensor ))
+                    self.rdfGraph.add(
                         (self.ROOM[self.currentComputedRoom], self.CORE.isLocationOf, self.SENSOR[self.currentComputedSensor]))
                     # add sensor captured temperature...
-                    self.__manageSensorObservation__(row=_row)
+                    self.__manageSensorObservation__(row=_row, idRow=_i)
                 else:
                     # <don't take into account sensors if the space isn't a room>
 
@@ -166,4 +176,4 @@ class Main():
 
 
 test = Main()
-test.generateRDFDataMeteo()
+test.extractSensorsInformations()  
