@@ -12,9 +12,29 @@ app = Flask(__name__)
 def index():
     return render_template("index.html")
 
+@app.route('/sensorroom')
+def sensorroom():
+    return render_template("sensorroom.html")
+
+@app.route('/observation')
+def observation():
+    return render_template("observation.html")
+
+@app.route('/sensor/[id_sensor]')
+def sensor():
+    with open('generatedFile.ttl','r') as f:
+        for line in f:
+            if line contains id_sensor:
+                for word in line.split():
+                    print(word) 
+    return ;
+
+
 @app.route("/index")
 def ind():
-    return redirect("./territoire.emse.fr/kg/emse/fayol/index.html")
+    return redirect("territoire.emse.fr/kg/emse/fayol/index.ttl")
+    #return
+
 
 # page data
 @app.route('/data', methods=["POST","GET"])
