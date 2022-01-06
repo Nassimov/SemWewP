@@ -25,12 +25,13 @@ def observation():
 def sensor():
     id_sensor=request.args.get('sensor', default = '*', type = str)
     with open('generatedFile.ttl','r') as f:
+        f2 = open("gf1.txt", "w")
         for line in f:
             if id_sensor in line:
-                print(line)
-                #for word in line.split():
-                #    print(word) 
-    return ;
+                f2.write(line)
+    
+    f2.close            
+    return redirect(f2)
 
 # http://127.0.0.1:3030/sensor/03f5ca58_aa70_47b3_980c_c8f486cac9ee
 # doesnt work
