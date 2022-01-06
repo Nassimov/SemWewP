@@ -20,16 +20,30 @@ def sensorroom():
 def observation():
     return render_template("observation.html")
 
+# http://127.0.0.1:3030/sensor?id_sensor=03f5ca58_aa70_47b3_980c_c8f486cac9ee
 @app.route('/sensor')
 def sensor():
-    id_sensor=request.args.get('sensor', default = 1, type = str)
+    id_sensor=request.args.get('sensor', default = '*', type = str)
     with open('generatedFile.ttl','r') as f:
         for line in f:
             if id_sensor in line:
-                for word in line.split():
-                    print(word) 
+                print(line)
+                #for word in line.split():
+                #    print(word) 
     return ;
 
+# http://127.0.0.1:3030/sensor/03f5ca58_aa70_47b3_980c_c8f486cac9ee
+# doesnt work
+@app.route('/sensor/<id_sensor>')
+def sensorId():
+    #id_sensor=request.args.get('sensor', default = '*', type = str)
+    with open('generatedFile.ttl','r') as f:
+        for line in f:
+            if id_sensor in line:
+                print(line)
+                #for word in line.split():
+                #    print(word) 
+    return ;
 
 @app.route("/index")
 def ind():
