@@ -177,193 +177,40 @@ class Main():
             _d1=datetime(year=2021, month=11, day=day, hour=_hour).strftime("%Y-%m-%dT%H:%M:%S")
 
             _d2=datetime(year=2021, month=11, day=day, hour=_hour,minute=59, second=59).strftime("%Y-%m-%dT%H:%M:%S")
-            #  Outside temp <= 0  , Inside temp >= 25 =>  Alarming
-            if _temp <= 0:
+            
+            if _temp <= 20:
+                #  Outside temp <= 20  , Inside temp >= 25 =>  Alarming
                 _query = Template(
-                """
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                PREFIX sensor: <http://localhost:3030/sensor/>
-                PREFIX sosa: <http://www.w3.org/ns/sosa/>
-                PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
-                PREFIX core: <https://w3id.org/rec/core/>
-                PREFIX ssn: <http://www.w3.org/ns/ssn/>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                SELECT ?room ?datetime ?result
-                            WHERE {
-                            ?room core:isLocationOf ?sensor .
-                            ?sensor ssn:detects ?observation .
-                            ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
-                            FILTER (
-                             xsd:float(?result) >= $v1  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
-                            )
-                                        
-                            }
-                
-                
-                
-                """
+                    """
+                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                    PREFIX sensor: <http://localhost:3030/sensor/>
+                    PREFIX sosa: <http://www.w3.org/ns/sosa/>
+                    PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
+                    PREFIX core: <https://w3id.org/rec/core/>
+                    PREFIX ssn: <http://www.w3.org/ns/ssn/>
+                    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                    SELECT ?room ?datetime ?result
+                                WHERE {
+                                ?room core:isLocationOf ?sensor .
+                                ?sensor ssn:detects ?observation .
+                                ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
+                                FILTER (
+                                xsd:float(?result) >= $v1  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
+                                )
+                                            
+                                }
+                    
+                    
+                    
+                    """
                 )
 
                 self.sparqlEndpont.setQuery(_query.substitute(v1=25,d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure( day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "alarmantByGroup" , path="Alarming"  )
-            # Outside Temp in ]0,5] , Inside temp in [22,25[ => Interessant
-            elif _temp > 0 and _temp <=5:
-                _query = Template(
-                """
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                PREFIX sensor: <http://localhost:3030/sensor/>
-                PREFIX sosa: <http://www.w3.org/ns/sosa/>
-                PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
-                PREFIX core: <https://w3id.org/rec/core/>
-                PREFIX ssn: <http://www.w3.org/ns/ssn/>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                SELECT ?room ?datetime ?result
-                            WHERE {
-                            ?room core:isLocationOf ?sensor .
-                            ?sensor ssn:detects ?observation .
-                            ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
-                            FILTER (
-                             (xsd:float(?result) >= $v1 && xsd:float(?result) < $v2 )  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
-                            )
-                                        
-                            }
-                
-                
-                
-                """
-                    )
-
-                self.sparqlEndpont.setQuery(_query.substitute(v1=22,v2=25,d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "interessantByGroup" , path="OfInterest" )
-            # Outside Temp in ]5,10] , Inside temp in [20,22[ => Normal
-            elif _temp >5 and _temp <=10 : 
-                _query = Template(
-                """
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                PREFIX sensor: <http://localhost:3030/sensor/>
-                PREFIX sosa: <http://www.w3.org/ns/sosa/>
-                PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
-                PREFIX core: <https://w3id.org/rec/core/>
-                PREFIX ssn: <http://www.w3.org/ns/ssn/>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                SELECT ?room ?datetime ?result
-                            WHERE {
-                            ?room core:isLocationOf ?sensor .
-                            ?sensor ssn:detects ?observation .
-                            ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
-                            FILTER (
-                             (xsd:float(?result) >= $v1 && xsd:float(?result) < $v2 ) && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
-                            )
-                                        
-                            }
-                
-                
-                
-                """
-                )
-
-                self.sparqlEndpont.setQuery(_query.substitute(v1=float(20),v2=float(22),d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "normalByGroup" , path= "Normal" )
-              
-            if _temp <=10 :
-                # Outside Temp <= 10 , Inside temp  >= 25 => Alarming   
-                #-------------------------------------------------------------------------------------------------      
-                _query = Template(
-                    """
-                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                    PREFIX sensor: <http://localhost:3030/sensor/>
-                    PREFIX sosa: <http://www.w3.org/ns/sosa/>
-                    PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
-                    PREFIX core: <https://w3id.org/rec/core/>
-                    PREFIX ssn: <http://www.w3.org/ns/ssn/>
-                    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                    SELECT ?room ?datetime ?result
-                                WHERE {
-                                ?room core:isLocationOf ?sensor .
-                                ?sensor ssn:detects ?observation .
-                                ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
-                                FILTER (
-                                xsd:float(?result) >= $v1  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
-                                )
-                                            
-                                }
-                    
-                    
-                    
-                    """
-                )
-                self.sparqlEndpont.setQuery(_query.substitute(v1=float(25),d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "Alarming-InterRanges" , path= "Alarming" )    
-
+                self.generateCsvGroupMesure( day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "alarming" , path="Alarming"  )
+            
                 #---------------------------------------------------------------------------------------------------------------------
-                # Outside Temp <= 10 , Inside temp in [22,25[ => Normal  
-                #------------------------------------------------------------------------------------------------- 
-                _query = Template(
-                    """
-                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                    PREFIX sensor: <http://localhost:3030/sensor/>
-                    PREFIX sosa: <http://www.w3.org/ns/sosa/>
-                    PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
-                    PREFIX core: <https://w3id.org/rec/core/>
-                    PREFIX ssn: <http://www.w3.org/ns/ssn/>
-                    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                    SELECT ?room ?datetime ?result
-                                WHERE {
-                                ?room core:isLocationOf ?sensor .
-                                ?sensor ssn:detects ?observation .
-                                ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
-                                FILTER (
-                                (xsd:float(?result) >= $v1 && xsd:float(?result) < $v2 ) && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
-                                )
-                                            
-                                }
-                    
-                    
-                    
-                    """
-                )
-
-                self.sparqlEndpont.setQuery(_query.substitute(v1=float(22) , v2=  float(25) ,d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "Normal-InterRanges" , path= "Normal" ) 
-            elif _temp > 10 and _temp <=20 :
-                
-                #---------------------------------------------------------------------------------------------------------------------
-                # Outside Temp in ]10,20] , Inside temp in >= 25 => Alarming
-                _query = Template(
-                    """
-                    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                    PREFIX sensor: <http://localhost:3030/sensor/>
-                    PREFIX sosa: <http://www.w3.org/ns/sosa/>
-                    PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
-                    PREFIX core: <https://w3id.org/rec/core/>
-                    PREFIX ssn: <http://www.w3.org/ns/ssn/>
-                    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                    SELECT ?room ?datetime ?result
-                                WHERE {
-                                ?room core:isLocationOf ?sensor .
-                                ?sensor ssn:detects ?observation .
-                                ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
-                                FILTER (
-                                xsd:float(?result) >= $v1  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
-                                )
-                                            
-                                }
-                    
-                    
-                    
-                    """
-                    )
-
-                self.sparqlEndpont.setQuery(_query.substitute(v1=float(25),d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "Alarming-InterRanges" , path= "Alarming" )    
-                #---------------------------------------------------------------------------------------------------------------------
-                # Outside Temp in ]10,20] , Inside temp in [20, 23[ => Normal
+                # Outside Temp <=20 , Inside temp in [20, 23[ => Normal
                 _query = Template(
                     """
                     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -391,10 +238,42 @@ class Main():
                 )
 
                 self.sparqlEndpont.setQuery(_query.substitute(v1=float(20), v2= float(23) ,d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "Normal-InterRanges" , path= "Normal" )    
+                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "normal" , path= "Normal" )    
+                if _temp > 10 and _temp <=20:
+                    
+                    #---------------------------------------------------------------------------------------------------------------------
+                    # Outside Temp in ]10,20] , Inside temp in [23, 25[ => Of interest
+                    _query = Template(
+                        """
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                        PREFIX sensor: <http://localhost:3030/sensor/>
+                        PREFIX sosa: <http://www.w3.org/ns/sosa/>
+                        PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
+                        PREFIX core: <https://w3id.org/rec/core/>
+                        PREFIX ssn: <http://www.w3.org/ns/ssn/>
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                        SELECT ?room ?datetime ?result
+                                    WHERE {
+                                    ?room core:isLocationOf ?sensor .
+                                    ?sensor ssn:detects ?observation .
+                                    ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
+                                    FILTER (
+                                    (xsd:float(?result) >= $v1 && xsd:float(?result) < $v2  ) && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
+                                    )
+                                                
+                                    }
+                        
+                        
+                        
+                        """
+                        )
 
-                #---------------------------------------------------------------------------------------------------------------------
-                # Outside Temp in ]10,20] , Inside temp in [23, 25[ => Of interest
+                    self.sparqlEndpont.setQuery(_query.substitute(v1=float(23), v2= float(25) ,d1=_d1 ,d2= _d2 ))
+                    self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "ofInterest" , path= "OfInterest" )               
+            
+            else:
+                #  Outside temp > 20  , Inside temp >= 25 =>  Alarming
                 _query = Template(
                     """
                     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -411,7 +290,7 @@ class Main():
                                 ?sensor ssn:detects ?observation .
                                 ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
                                 FILTER (
-                                (xsd:float(?result) >= $v1 && xsd:float(?result) < $v2  ) && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
+                                xsd:float(?result) >= $v1  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
                                 )
                                             
                                 }
@@ -419,10 +298,103 @@ class Main():
                     
                     
                     """
+                )
+
+                self.sparqlEndpont.setQuery(_query.substitute(v1=25,d1=_d1 ,d2= _d2 ))
+                self.generateCsvGroupMesure( day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "alarming" , path="Alarming"  )    
+                if _temp <=23 : 
+                    #  Outside temp > 20 and <=23  , Inside tempin 20 ... 23 =>  Alarming
+                    _query = Template(
+                        """
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                        PREFIX sensor: <http://localhost:3030/sensor/>
+                        PREFIX sosa: <http://www.w3.org/ns/sosa/>
+                        PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
+                        PREFIX core: <https://w3id.org/rec/core/>
+                        PREFIX ssn: <http://www.w3.org/ns/ssn/>
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                        SELECT ?room ?datetime ?result
+                                    WHERE {
+                                    ?room core:isLocationOf ?sensor .
+                                    ?sensor ssn:detects ?observation .
+                                    ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
+                                    FILTER (
+                                    (xsd:float(?result) >= $v1 && xsd:float(?result) <= $v2  )  && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
+                                    )
+                                                
+                                    }
+                        
+                        
+                        
+                        """
                     )
 
-                self.sparqlEndpont.setQuery(_query.substitute(v1=float(23), v2= float(25) ,d1=_d1 ,d2= _d2 ))
-                self.generateCsvGroupMesure(day= day, temp= _temp,d1= _d1, d2= _d2, meteoType= "OfInterest-InterRanges" , path= "OfInterest" )               
+                    self.sparqlEndpont.setQuery(_query.substitute(v1=20,v2=23,d1=_d1 ,d2= _d2 ))
+                    self.generateCsvGroupMesure( day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "ofInterest" , path="OfInterest"  )
+
+                if _temp >25 : 
+                    #  Outside temp > 25  , Inside temp<21 =>  Alarming
+                    _query = Template(
+                        """
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                        PREFIX sensor: <http://localhost:3030/sensor/>
+                        PREFIX sosa: <http://www.w3.org/ns/sosa/>
+                        PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
+                        PREFIX core: <https://w3id.org/rec/core/>
+                        PREFIX ssn: <http://www.w3.org/ns/ssn/>
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                        SELECT ?room ?datetime ?result
+                                    WHERE {
+                                    ?room core:isLocationOf ?sensor .
+                                    ?sensor ssn:detects ?observation .
+                                    ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
+                                    FILTER (
+                                    xsd:float(?result) <= $v1    && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
+                                    )
+                                                
+                                    }
+                        
+                        
+                        
+                        """
+                    )
+
+                    self.sparqlEndpont.setQuery(_query.substitute(v1=21,d1=_d1 ,d2= _d2 ))
+                    self.generateCsvGroupMesure( day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "alarming" , path="Alarming"  )
+                if _temp >23 and _temp <=25:
+                    #  Outside temp > 25  , Inside temp<21 =>  Alarming
+                    _query = Template(
+                        """
+                        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                        PREFIX sensor: <http://localhost:3030/sensor/>
+                        PREFIX sosa: <http://www.w3.org/ns/sosa/>
+                        PREFIX room: <https://territoire.emse.fr/kg/emse/fayol/4ET/>
+                        PREFIX core: <https://w3id.org/rec/core/>
+                        PREFIX ssn: <http://www.w3.org/ns/ssn/>
+                        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                        SELECT ?room ?datetime ?result
+                                    WHERE {
+                                    ?room core:isLocationOf ?sensor .
+                                    ?sensor ssn:detects ?observation .
+                                    ?observation sosa:hasSimpleResult ?result ; sosa:resultTime ?datetime ; sosa:observedProperty ?prop .
+                                    FILTER (
+                                    (xsd:float(?result) >= $v1 && xsd:float(?result) <= $v2  )    && (?datetime > "$d1"^^xsd:dateTime && ?datetime < "$d2"^^xsd:dateTime) &&  regex(str(?prop),"temperature")   
+                                    )
+                                                
+                                    }
+                        
+                        
+                        
+                        """
+                    )
+
+                    self.sparqlEndpont.setQuery(_query.substitute(v1=23,v2=25,d1=_d1 ,d2= _d2 ))
+                    self.generateCsvGroupMesure( day= day, temp= _temp, d1= _d1, d2= _d2, meteoType= "ofInterest" , path="OfInterest"  )
+                    
+
             
 
     def generateCsvGroupMesure(self, day, temp, d1, d2, meteoType, path):
