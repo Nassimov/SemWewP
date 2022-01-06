@@ -20,11 +20,12 @@ def sensorroom():
 def observation():
     return render_template("observation.html")
 
-@app.route('/sensor/[id_sensor]')
+@app.route('/sensor')
 def sensor():
+    id_sensor=request.args.get('sensor', default = 1, type = str)
     with open('generatedFile.ttl','r') as f:
         for line in f:
-            if line contains id_sensor:
+            if id_sensor in line:
                 for word in line.split():
                     print(word) 
     return ;
@@ -32,7 +33,7 @@ def sensor():
 
 @app.route("/index")
 def ind():
-    return redirect("territoire.emse.fr/kg/emse/fayol/index.ttl")
+    return redirect("./territoire.emse.fr/kg/emse/fayol/index.html")
     #return
 
 
